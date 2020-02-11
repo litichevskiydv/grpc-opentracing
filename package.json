@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "Interceptors for client and server to track calls through opentracing",
   "main": "./src/index.js",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "jest --verbose"
   },
@@ -19,5 +24,18 @@
   "bugs": {
     "url": "https://github.com/litichevskiydv/grpc-opentracing/issues"
   },
-  "homepage": "https://github.com/litichevskiydv/grpc-opentracing#readme"
+  "homepage": "https://github.com/litichevskiydv/grpc-opentracing#readme",
+  "dependencies": {
+    "serialize-error": "^5.0.0"
+  },
+  "peerDependencies": {
+    "grpc": "^1.24.2",
+    "opentracing": "^0.14.4",
+    "processing-context": "^1.0.0"
+  },
+  "devDependencies": {
+    "grpc": "^1.24.2",
+    "opentracing": "^0.14.4",
+    "processing-context": "^1.0.0"
+  }
 }
