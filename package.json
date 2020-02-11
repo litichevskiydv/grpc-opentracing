@@ -1,0 +1,23 @@
+{
+  "name": "grpc-opentracing",
+  "version": "1.0.0",
+  "description": "Interceptors for client and server to track calls through opentracing",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "jest --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/litichevskiydv/grpc-opentracing.git"
+  },
+  "keywords": [
+    "gRPC",
+    "opentracing"
+  ],
+  "author": "Dmitriy Litichevskiy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/litichevskiydv/grpc-opentracing/issues"
+  },
+  "homepage": "https://github.com/litichevskiydv/grpc-opentracing#readme"
+}
