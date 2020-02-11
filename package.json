@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Interceptors for client and server to track calls through opentracing",
   "main": "./src/index.js",
+  "types": "./src/index.d.ts",
   "files": [
     "src",
     "README.md",
