@@ -1,0 +1,45 @@
+syntax = "proto3";
+package v1;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+// Event definition
+message Event {
+    int32 id = 1;
+
+    string name = 2;
+  }
+
+// The request message containing the user's name.
+message HelloRequest {
+  Event event = 1;
+}
+
+// The response message containing the greetings.
+message HelloResponse {
+  Event event = 1;
+}
+
+// The request message for throwing error.
+message ErrorRequest {
+  string subject = 1;
+}
+
+// The demo service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloResponse) {
+    option (google.api.http) = {
+      post: "/v1/hello"
+      body: "*"
+    };
+  }
+  // Sends a greeting
+  rpc ThrowError (ErrorRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/error"
+      body: "*"
+    };
+  }
+}

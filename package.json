@@ -10,6 +10,11 @@
     "LICENSE"
   ],
   "scripts": {
+    "build:server:protos": "make-dir ./tests/generated/server && pbjs -r greeter -t static-module -w commonjs --no-verify -o ./tests/generated/server/greeter_pb.js -p ./tests/protos greeter.proto",
+    "build:server:types": "make-dir ./tests/generated/server && pbts -o ./tests/generated/server/greeter_pb.d.ts ./tests/generated/server/greeter_pb.js",
+    "build:server": "npm run build:server:protos && npm run build:server:types",
+    "build:client": "grpc-gen-client --out ./tests/generated/client --include ./tests/protos/ greeter.proto",
+    "build": "npm run build:server && npm run build:client",
     "test": "jest --verbose"
   },
   "repository": {
@@ -37,10 +42,15 @@
   "devDependencies": {
     "@types/jest": "^25.1.2",
     "grpc": "^1.24.2",
+    "grpc-host-builder": "^4.3.2",
+    "grpc-instrumentum": "^2.0.6",
+    "grpc-pbf-loader": "^1.0.2",
     "jest": "^25.1.0",
     "jest-extended": "^0.11.5",
+    "make-dir-cli": "^2.0.0",
     "opentracing": "^0.14.4",
-    "processing-context": "^1.0.0"
+    "processing-context": "^1.0.0",
+    "protobufjs": "^6.8.8"
   },
   "jest": {
     "testEnvironment": "node",
