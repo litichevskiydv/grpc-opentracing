@@ -1,5 +1,6 @@
 const path = require("path");
 const grpc = require("grpc");
+const opentracing = require("opentracing");
 const { GrpcHostBuilder } = require("grpc-host-builder");
 const { loadSync } = require("grpc-pbf-loader").packageDefinition;
 
@@ -16,8 +17,8 @@ const {
   Event,
   GreeterClient
 } = require("./generated/client/greeter_client_pb").v1;
-
-grpc.setLogVerbosity(grpc.logVerbosity.ERROR + 1);
+const LocalTracer = require("./localTracer/tracer");
+const LocalSpan = require("./localTracer/span");
 
 const grpcBind = "0.0.0.0:3000";
 const packageObject = grpc.loadPackageDefinition(
@@ -29,6 +30,10 @@ const packageObject = grpc.loadPackageDefinition(
 let server = null;
 /** @type {GreeterClient} */
 let client = null;
+const tracer = new LocalTracer();
+
+grpc.setLogVerbosity(grpc.logVerbosity.ERROR + 1);
+opentracing.initGlobalTracer(tracer);
 
 /**
  * @param {function(GrpcHostBuilder):void} [configurator]
@@ -75,6 +80,8 @@ beforeEach(() => {
 afterEach(() => {
   if (client) client.close();
   if (server) server.forceShutdown();
+
+  tracer.clear();
 });
 
 test("Must trace single call on the client side", async () => {
@@ -83,4 +90,11 @@ test("Must trace single call on the client side", async () => {
 
   // When
   await sayHello();
+
+  // Then
+  expect(tracer.spans.size).toBe(1);
+
+  const expectedSpanId = 0;
+  const expectedSpan = new LocalSpan(expectedSpanId, "gRPC call to /v1.Greeter/SayHello").finish();
+  expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
 });
