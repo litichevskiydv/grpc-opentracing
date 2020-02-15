@@ -61,11 +61,12 @@ const createServer = configurator => {
 };
 
 /**
+ * @param {string} [name]
  * @returns {Promise<import("./generated/client/greeter_client_pb").v1.HelloResponse>}
  */
-const sayHello = () => {
+const sayHello = name => {
   const event = new Event();
-  event.setName("Lucky Every");
+  event.setName(name || "Lucky Every");
 
   const request = new ClientHelloRequest();
   request.setEvent(event);

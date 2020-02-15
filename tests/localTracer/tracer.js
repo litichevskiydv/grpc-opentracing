@@ -18,13 +18,7 @@ module.exports = class Tracer {
     if (options) {
       if (options.tags) Object.entries(options.tags).forEach(([key, value]) => span.setTag(key, value));
 
-      if (options.childOf) {
-        /** @type {Span} */
-        const parentSpan = options.childOf;
-
-        span.parentSpan = parentSpan;
-        parentSpan.childSpans.push(span);
-      }
+      if (options.childOf) options.childOf.withChildSpans(span);
     }
 
     this.spans.set(span._id, span);

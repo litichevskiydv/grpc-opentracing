@@ -43,4 +43,17 @@ module.exports = class Span {
     this.isFinished = true;
     return this;
   }
+
+  /**
+   * @param  {...Span} childSpans
+   * @returns {Span}
+   */
+  withChildSpans(...childSpans) {
+    this.childSpans.push(...childSpans);
+    childSpans.forEach(span => {
+      span.parentSpan = this;
+    });
+
+    return this;
+  }
 };
