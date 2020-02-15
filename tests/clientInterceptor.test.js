@@ -44,6 +44,7 @@ const createServer = configurator => {
   if (configurator) configurator(hostBuilder);
 
   return hostBuilder
+    .useLoggersFactory(() => ({ error: jest.fn() }))
     .addService(packageObject.v1.Greeter.service, {
       sayHello: call => {
         const request = new ServerHelloRequest(call.request);
@@ -74,6 +75,15 @@ const sayHello = name => {
   return client.sayHello(request);
 };
 
+/**
+ * @returns {Promise<void>}
+ */
+const throwError = async () => {
+  try {
+    await client.throwError(new ClientErrorRequest());
+  } catch (error) {}
+};
+
 beforeEach(() => {
   client = new GreeterClient(grpcBind, grpc.credentials.createInsecure(), { interceptors: [clientInterceptor] });
 });
@@ -85,7 +95,7 @@ afterEach(() => {
   tracer.clear();
 });
 
-test("Must trace single call on the client side", async () => {
+test("Must trace single successful call on the client side", async () => {
   // Given
   server = createServer();
 
@@ -97,5 +107,24 @@ test("Must trace single call on the client side", async () => {
 
   const expectedSpanId = 0;
   const expectedSpan = new LocalSpan(expectedSpanId, "gRPC call to /v1.Greeter/SayHello").finish();
+  expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
+});
+
+test("Must trace single errored call on the client side", async () => {
+  // Given
+  server = createServer();
+
+  // When
+  await throwError();
+
+  // Then
+  expect(tracer.spans.size).toBe(1);
+
+  const expectedSpanId = 0;
+  const expectedSpan = new LocalSpan(expectedSpanId, "gRPC call to /v1.Greeter/ThrowError")
+    .setTag(opentracing.Tags.ERROR, true)
+    .setTag(opentracing.Tags.SAMPLING_PRIORITY, 1)
+    .log({ event: "error", code: "INTERNAL", message: "Something went wrong" })
+    .finish();
   expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
 });
