@@ -32,7 +32,7 @@ module.exports = class Tracer {
    * @returns {void}
    */
   inject(span, format, carrier) {
-    carrier.spanId = String(span._id);
+    carrier["span-id"] = String(span._id);
   }
 
   /**
@@ -41,7 +41,7 @@ module.exports = class Tracer {
    * @returns {Span}
    */
   extract(format, carrier) {
-    return this.spans.get(Number(carrier.spanId));
+    return this.spans.get(Number(carrier["span-id"]));
   }
 
   clear() {
