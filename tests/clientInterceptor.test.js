@@ -76,11 +76,12 @@ const sayHello = name => {
 };
 
 /**
+ * @param {import("grpc").CallOptions} [callOptions]
  * @returns {Promise<void>}
  */
-const throwError = async () => {
+const throwError = async callOptions => {
   try {
-    await client.throwError(new ClientErrorRequest());
+    await client.throwError(new ClientErrorRequest(), null, callOptions);
   } catch (error) {}
 };
 
@@ -183,4 +184,23 @@ test("Must trace two consecutive calls correctly", async () => {
     )
     .finish();
   expect(tracer.spans.get(expectedClientSpanIdForJerry)).toEqual(expectedClientSpanForJerry);
+});
+
+test("Must trace the call that did not fit into the deadline", async () => {
+  // Given
+  server = createServer();
+
+  // When
+  await throwError({ deadline: Date.now() + 1 });
+
+  // Then
+  expect(tracer.spans.size).toBe(1);
+
+  const expectedSpanId = 0;
+  const expectedSpan = new LocalSpan(expectedSpanId, "gRPC call to /v1.Greeter/ThrowError")
+    .setTag(opentracing.Tags.ERROR, true)
+    .setTag(opentracing.Tags.SAMPLING_PRIORITY, 1)
+    .log({ event: "error", code: "DEADLINE_EXCEEDED", message: "Deadline Exceeded" })
+    .finish();
+  expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
 });
