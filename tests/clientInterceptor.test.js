@@ -139,8 +139,8 @@ test("Must link client and server spans together in the single call", async () =
   // Then
   expect(tracer.spans.size).toBe(2);
 
-  const expectedSpanId = 0;
-  const expectedSpan = new LocalSpan(expectedSpanId, "gRPC call to /v1.Greeter/SayHello")
+  const expectedClientSpanId = 0;
+  const expectedClientSpan = new LocalSpan(expectedClientSpanId, "gRPC call to /v1.Greeter/SayHello")
     .withChildSpans(
       new LocalSpan(1, "/v1.Greeter/SayHello")
         .log({ "gRPC request": { event: { id: 0, name: "Lucky Every" } } })
@@ -148,5 +148,39 @@ test("Must link client and server spans together in the single call", async () =
         .finish()
     )
     .finish();
-  expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
+  expect(tracer.spans.get(expectedClientSpanId)).toEqual(expectedClientSpan);
+});
+
+test("Must trace two consecutive calls correctly", async () => {
+  // Given
+  server = createServer(x => x.addInterceptor(serverInterceptor));
+
+  // When
+  await sayHello("Tom");
+  await sayHello("Jerry");
+
+  // Then
+  expect(tracer.spans.size).toBe(4);
+
+  const expectedClientSpanIdForTom = 0;
+  const expectedClientSpanForTom = new LocalSpan(expectedClientSpanIdForTom, "gRPC call to /v1.Greeter/SayHello")
+    .withChildSpans(
+      new LocalSpan(1, "/v1.Greeter/SayHello")
+        .log({ "gRPC request": { event: { id: 0, name: "Tom" } } })
+        .log({ "gRPC response": { event: { id: 1, name: "Tom" } } })
+        .finish()
+    )
+    .finish();
+  expect(tracer.spans.get(expectedClientSpanIdForTom)).toEqual(expectedClientSpanForTom);
+
+  const expectedClientSpanIdForJerry = 2;
+  const expectedClientSpanForJerry = new LocalSpan(expectedClientSpanIdForJerry, "gRPC call to /v1.Greeter/SayHello")
+    .withChildSpans(
+      new LocalSpan(3, "/v1.Greeter/SayHello")
+        .log({ "gRPC request": { event: { id: 0, name: "Jerry" } } })
+        .log({ "gRPC response": { event: { id: 1, name: "Jerry" } } })
+        .finish()
+    )
+    .finish();
+  expect(tracer.spans.get(expectedClientSpanIdForJerry)).toEqual(expectedClientSpanForJerry);
 });
