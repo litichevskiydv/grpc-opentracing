@@ -128,3 +128,25 @@ test("Must trace single errored call on the client side", async () => {
     .finish();
   expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
 });
+
+test("Must link client and server spans together in the single call", async () => {
+  // Given
+  server = createServer(x => x.addInterceptor(serverInterceptor));
+
+  // When
+  await sayHello();
+
+  // Then
+  expect(tracer.spans.size).toBe(2);
+
+  const expectedSpanId = 0;
+  const expectedSpan = new LocalSpan(expectedSpanId, "gRPC call to /v1.Greeter/SayHello")
+    .withChildSpans(
+      new LocalSpan(1, "/v1.Greeter/SayHello")
+        .log({ "gRPC request": { event: { id: 0, name: "Lucky Every" } } })
+        .log({ "gRPC response": { event: { id: 1, name: "Lucky Every" } } })
+        .finish()
+    )
+    .finish();
+  expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
+});
