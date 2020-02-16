@@ -80,12 +80,10 @@ const sayHello = name => {
  * @returns {Promise<void>}
  */
 const throwError = async callOptions => {
-  try {
-    const request = new ClientErrorRequest();
-    request.setSubject("Learning");
+  const request = new ClientErrorRequest();
+  request.setSubject("Learning");
 
-    await client.throwError(request, null, callOptions);
-  } catch (error) {}
+  await client.throwError(request, null, callOptions);
 };
 
 beforeEach(() => {
@@ -121,10 +119,9 @@ test("Must trace single errored call on the server side", async () => {
   // Given
   server = createServer();
 
-  // When
-  await throwError();
+  // When, Then
+  await expect(throwError()).rejects.toEqual(new Error("13 INTERNAL: Something went wrong"));
 
-  // Then
   expect(tracer.spans.size).toBe(1);
 
   const expectedSpanId = 0;
