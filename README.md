@@ -8,3 +8,25 @@
 [![Coverage Status](https://coveralls.io/repos/github/litichevskiydv/grpc-opentracing/badge.svg?branch=master)](https://coveralls.io/github/litichevskiydv/grpc-opentracing?branch=master)
 
 Interceptors for client and server to track calls through opentracing
+
+# Install
+
+`npm i grpc-opentracing`
+
+# Usage
+
+```javascript
+const { clientInterceptor, serverInterceptor } = require("grpc-opentracing");
+
+/*...*/
+
+const server = new GrpcHostBuilder()
+  /*...*/
+  .addInterceptor(serverInterceptor)
+  /*...*/
+  .bind(grpcBind)
+  .build();
+
+/*...*/
+const client = new ServerClient(grpcBind, grpc.credentials.createInsecure(), { interceptors: [clientInterceptor] });
+```
