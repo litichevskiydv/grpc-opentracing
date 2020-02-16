@@ -26,6 +26,11 @@ message ErrorRequest {
   string subject = 1;
 }
 
+// The request for performing long transaction.
+message TransactionRequest {
+  string payload = 1;
+}
+
 // The demo service definition.
 service Greeter {
   // Sends a greeting
@@ -35,10 +40,18 @@ service Greeter {
       body: "*"
     };
   }
-  // Sends a greeting
+  // Throws an error
   rpc ThrowError (ErrorRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/error"
+      body: "*"
+    };
+  }
+
+  // Performs long transaction
+  rpc PerformTransaction(TransactionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/transaction"
       body: "*"
     };
   }

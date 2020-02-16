@@ -14,9 +14,11 @@ const {
 const {
   HelloRequest: ClientHelloRequest,
   ErrorRequest: ClientErrorRequest,
+  TransactionRequest: ClientTransactionRequest,
   Event,
   GreeterClient
 } = require("./generated/client/greeter_client_pb").v1;
+const { GreeterClient: GreeterRawLevelClient } = require("./generated/client/greeter_grpc_pb");
 const LocalTracer = require("./localTracer/tracer");
 const LocalSpan = require("./localTracer/span");
 
@@ -46,7 +48,7 @@ const createServer = configurator => {
   return hostBuilder
     .useLoggersFactory(() => ({ error: jest.fn() }))
     .addService(packageObject.v1.Greeter.service, {
-      sayHello: call => {
+      sayHello: async call => {
         const request = new ServerHelloRequest(call.request);
 
         const event = request.event;
@@ -55,6 +57,13 @@ const createServer = configurator => {
       },
       throwError: () => {
         throw new Error("Something went wrong");
+      },
+      performTransaction: async () => {
+        await new Promise(resolve => {
+          setTimeout(() => resolve(), 1000);
+        });
+
+        return {};
       }
     })
     .bind(grpcBind)
@@ -83,6 +92,28 @@ const throwError = async callOptions => {
   try {
     await client.throwError(new ClientErrorRequest(), null, callOptions);
   } catch (error) {}
+};
+
+/**
+ * @returns {Promise<void>}
+ */
+const startAndCancelTransaction = async () => {
+  const rawLevelClient = new GreeterRawLevelClient(grpcBind, grpc.credentials.createInsecure(), {
+    interceptors: [clientInterceptor]
+  });
+
+  try {
+    await new Promise((resolve, reject) => {
+      const call = rawLevelClient.performTransaction(new ClientTransactionRequest(), (error, response) => {
+        if (error) reject(error);
+        else resolve(response);
+      });
+
+      setTimeout(() => call.cancel(), 100);
+    });
+  } catch (error) {}
+
+  rawLevelClient.close();
 };
 
 beforeEach(() => {
@@ -201,6 +232,25 @@ test("Must trace the call that did not fit into the deadline", async () => {
     .setTag(opentracing.Tags.ERROR, true)
     .setTag(opentracing.Tags.SAMPLING_PRIORITY, 1)
     .log({ event: "error", code: "DEADLINE_EXCEEDED", message: "Deadline Exceeded" })
+    .finish();
+  expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
+});
+
+test("Must trace cancelled call", async () => {
+  // Given
+  server = createServer();
+
+  // When
+  await startAndCancelTransaction();
+
+  // Then
+  expect(tracer.spans.size).toBe(1);
+
+  const expectedSpanId = 0;
+  const expectedSpan = new LocalSpan(expectedSpanId, "gRPC call to /v1.Greeter/PerformTransaction")
+    .setTag(opentracing.Tags.ERROR, true)
+    .setTag(opentracing.Tags.SAMPLING_PRIORITY, 1)
+    .log({ event: "error", code: "CANCELLED", message: "Cancelled" })
     .finish();
   expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
 });
