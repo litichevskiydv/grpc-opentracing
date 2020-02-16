@@ -60,7 +60,8 @@
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/tests/generated/"
+      "/tests/generated/",
+      "/tests/localTracer/"
     ]
   }
 }
