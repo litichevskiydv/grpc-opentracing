@@ -19,6 +19,7 @@ const {
   GreeterClient
 } = require("./generated/client/greeter_client_pb").v1;
 const { GreeterClient: GreeterRawLevelClient } = require("./generated/client/greeter_grpc_pb");
+
 const LocalTracer = require("./localTracer/tracer");
 const LocalSpan = require("./localTracer/span");
 
