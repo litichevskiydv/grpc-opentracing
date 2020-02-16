@@ -133,3 +133,29 @@ test("Must trace single errored call on the server side", async () => {
     .finish();
   expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
 });
+
+test("Must trace two consecutive calls correctly", async () => {
+  // Given
+  server = createServer();
+
+  // When
+  await sayHello("Tom");
+  await sayHello("Jerry");
+
+  // Then
+  expect(tracer.spans.size).toBe(2);
+
+  const expectedClientSpanIdForTom = 0;
+  const expectedClientSpanForTom = new LocalSpan(expectedClientSpanIdForTom, "/v1.Greeter/SayHello")
+    .log({ "gRPC request": { event: { id: 0, name: "Tom" } } })
+    .log({ "gRPC response": { event: { id: 84, name: "Tom" } } })
+    .finish();
+  expect(tracer.spans.get(expectedClientSpanIdForTom)).toEqual(expectedClientSpanForTom);
+
+  const expectedClientSpanIdForJerry = 1;
+  const expectedClientSpanForJerry = new LocalSpan(expectedClientSpanIdForJerry, "/v1.Greeter/SayHello")
+    .log({ "gRPC request": { event: { id: 0, name: "Jerry" } } })
+    .log({ "gRPC response": { event: { id: 74, name: "Jerry" } } })
+    .finish();
+  expect(tracer.spans.get(expectedClientSpanIdForJerry)).toEqual(expectedClientSpanForJerry);
+});
