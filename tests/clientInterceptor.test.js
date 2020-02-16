@@ -222,7 +222,7 @@ test("Must trace the call that did not fit into the deadline", async () => {
   server = createServer();
 
   // When
-  await throwError({ deadline: Date.now() + 1 });
+  await throwError({ deadline: 10 });
 
   // Then
   expect(tracer.spans.size).toBe(1);
