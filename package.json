@@ -2,6 +2,9 @@
   "name": "grpc-opentracing",
   "version": "1.0.0",
   "description": "Interceptors for client and server to track calls through opentracing",
+  "engines": {
+    "node": ">=8"
+  },
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "files": [
