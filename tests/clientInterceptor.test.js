@@ -23,7 +23,6 @@ const { GreeterClient: GreeterRawLevelClient } = require("./generated/client/gre
 const LocalTracer = require("./localTracer/tracer");
 const LocalSpan = require("./localTracer/span");
 
-const grpcBind = "0.0.0.0:3002";
 const packageObject = grpc.loadPackageDefinition(
   loadSync(path.join(__dirname, "./protos/greeter.proto"), {
     includeDirs: [path.join(__dirname, "./include/")],
@@ -39,10 +38,11 @@ grpc.setLogVerbosity(grpc.logVerbosity.ERROR + 1);
 opentracing.initGlobalTracer(tracer);
 
 /**
+ * @param {string} grpcBind
  * @param {function(GrpcHostBuilder):void} [configurator]
  * @returns {import("@grpc/grpc-js").Server}
  */
-const createServer = (configurator) => {
+const createServer = (grpcBind, configurator) => {
   const hostBuilder = new GrpcHostBuilder();
   if (configurator) configurator(hostBuilder);
 
@@ -72,9 +72,10 @@ const createServer = (configurator) => {
 };
 
 /**
+ * @param {string} grpcBind
  * @returns {GreeterClient}
  */
-const createClient = () =>
+const createClient = (grpcBind) =>
   new GreeterClient(grpcBind, grpc.credentials.createInsecure(), { interceptors: [clientInterceptor] });
 
 /**
@@ -102,9 +103,10 @@ const throwError = async (callOptions) => {
 };
 
 /**
+ * @param {string} grpcBind
  * @returns {Promise<void>}
  */
-const startAndCancelTransaction = async () => {
+const startAndCancelTransaction = async (grpcBind) => {
   const rawLevelClient = new GreeterRawLevelClient(grpcBind, grpc.credentials.createInsecure(), {
     interceptors: [clientInterceptor],
   });
@@ -124,15 +126,23 @@ const startAndCancelTransaction = async () => {
 };
 
 afterEach(() => {
-  client.close();
-  server.forceShutdown();
+  if (client) {
+    client.close();
+    client = null;
+  }
+  if (server) {
+    server.forceShutdown();
+    server = null;
+  }
+
   tracer.clear();
 });
 
 test("Must trace single successful call on the client side", async () => {
   // Given
-  server = await createServer();
-  client = createClient();
+  const grpcBind = "0.0.0.0:3002";
+  server = await createServer(grpcBind);
+  client = createClient(grpcBind);
 
   // When
   await sayHello();
@@ -147,8 +157,9 @@ test("Must trace single successful call on the client side", async () => {
 
 test("Must trace single errored call on the client side", async () => {
   // Given
-  server = await createServer();
-  client = createClient();
+  const grpcBind = "0.0.0.0:3003";
+  server = await createServer(grpcBind);
+  client = createClient(grpcBind);
 
   // When
   await throwError();
@@ -167,8 +178,9 @@ test("Must trace single errored call on the client side", async () => {
 
 test("Must link client and server spans together in the single call", async () => {
   // Given
-  server = await createServer((x) => x.addInterceptor(serverInterceptor));
-  client = createClient();
+  const grpcBind = "0.0.0.0:3004";
+  server = await createServer(grpcBind, (x) => x.addInterceptor(serverInterceptor));
+  client = createClient(grpcBind);
 
   // When
   await sayHello();
@@ -190,8 +202,9 @@ test("Must link client and server spans together in the single call", async () =
 
 test("Must trace two consecutive calls correctly", async () => {
   // Given
-  server = await createServer((x) => x.addInterceptor(serverInterceptor));
-  client = createClient();
+  const grpcBind = "0.0.0.0:3005";
+  server = await createServer(grpcBind, (x) => x.addInterceptor(serverInterceptor));
+  client = createClient(grpcBind);
 
   // When
   await sayHello("Tom");
@@ -225,8 +238,9 @@ test("Must trace two consecutive calls correctly", async () => {
 
 test("Must trace the call that did not fit into the deadline", async () => {
   // Given
-  server = await createServer();
-  client = createClient();
+  const grpcBind = "0.0.0.0:3006";
+  server = await createServer(grpcBind);
+  client = createClient(grpcBind);
 
   // When
   await throwError({ deadline: 10 });
@@ -245,11 +259,11 @@ test("Must trace the call that did not fit into the deadline", async () => {
 
 test("Must trace cancelled call", async () => {
   // Given
-  server = await createServer();
-  client = createClient();
+  const grpcBind = "0.0.0.0:3007";
+  server = await createServer(grpcBind);
 
   // When
-  await startAndCancelTransaction();
+  await startAndCancelTransaction(grpcBind);
 
   // Then
   expect(tracer.spans.size).toBe(1);
