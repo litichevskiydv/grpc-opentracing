@@ -18,7 +18,8 @@
     "build:server": "npm run build:server:protos && npm run build:server:types",
     "build:client": "grpc-gen-client --out ./tests/generated/client --include ./tests/protos/ greeter.proto",
     "build": "npm run build:server && npm run build:client",
-    "test": "jest --verbose"
+    "test": "jest --verbose",
+    "coverageCalculation": "jest --coverage"
   },
   "repository": {
     "type": "git",
@@ -45,7 +46,6 @@
   "devDependencies": {
     "@grpc/grpc-js": "^1.2.12",
     "@types/jest": "^26.0.22",
-    "coveralls": "^3.1.0",
     "grpc-host-builder": "^5.3.3",
     "grpc-instrumentum": "^3.0.7",
     "grpc-pbf-loader": "^1.0.4",
