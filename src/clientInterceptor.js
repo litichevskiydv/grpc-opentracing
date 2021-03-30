@@ -1,25 +1,25 @@
-const { InterceptingCall, status: grpcStatus } = require("grpc");
+const { InterceptingCall, status: grpcStatus } = require("@grpc/grpc-js");
 const opentracing = require("opentracing");
 const { defaultContext } = require("processing-context");
 
 const grpcStatusesByCodes = new Map(Object.entries(grpcStatus).map(([key, value]) => [value, key]));
 
 /**
- * @param {{method_definition: import("grpc").MethodDefinition}} options
+ * @param {{method_definition: import("@grpc/grpc-js").MethodDefinition}} options
  * @param {Function} nextCall
  * @returns {InterceptingCall}
  */
-module.exports = function(options, nextCall) {
+module.exports = function (options, nextCall) {
   return new InterceptingCall(nextCall(options), {
     /**
-     * @param {import("grpc").Metadata} metadata
-     * @param {import("grpc").Listener} listener
+     * @param {import("@grpc/grpc-js").Metadata} metadata
+     * @param {import("@grpc/grpc-js").Listener} listener
      * @param {Function} next
      */
-    start: function(metadata, listener, next) {
+    start: function (metadata, listener, next) {
       const tracer = opentracing.globalTracer();
       const span = tracer.startSpan(`gRPC call to ${options.method_definition.path}`, {
-        childOf: defaultContext.get("currentSpan")
+        childOf: defaultContext.get("currentSpan"),
       });
 
       const headers = {};
@@ -28,24 +28,24 @@ module.exports = function(options, nextCall) {
 
       next(metadata, {
         /**
-         * @param {import("grpc").StatusObject} status
+         * @param {import("@grpc/grpc-js").StatusObject} status
          * @param {Function} next
          */
-        onReceiveStatus: function(status, next) {
+        onReceiveStatus: function (status, next) {
           if (status.code !== grpcStatus.OK) {
             span.setTag(opentracing.Tags.ERROR, true);
             span.setTag(opentracing.Tags.SAMPLING_PRIORITY, 1);
             span.log({
               event: "error",
               code: grpcStatusesByCodes.get(status.code) || grpcStatusesByCodes.get(grpcStatus.INTERNAL),
-              message: status.details
+              message: status.details,
             });
           }
 
           span.finish();
           next(status);
-        }
+        },
       });
-    }
+    },
   });
 };

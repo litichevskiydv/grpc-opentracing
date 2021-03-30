@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Interceptors for client and server to track calls through opentracing",
   "engines": {
-    "node": ">=8"
+    "node": ">=10.10.0"
   },
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -35,26 +35,26 @@
   },
   "homepage": "https://github.com/litichevskiydv/grpc-opentracing#readme",
   "dependencies": {
-    "serialize-error": "^5.0.0"
+    "serialize-error": "^8.0.1"
   },
   "peerDependencies": {
-    "grpc": "^1.24.2",
+    "@grpc/grpc-js": "^1.2.0",
     "opentracing": "^0.14.4",
     "processing-context": "^1.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.5",
+    "@grpc/grpc-js": "^1.2.12",
+    "@types/jest": "^26.0.22",
     "coveralls": "^3.1.0",
-    "grpc": "^1.24.2",
-    "grpc-host-builder": "^4.3.2",
-    "grpc-instrumentum": "^2.0.6",
-    "grpc-pbf-loader": "^1.0.2",
-    "jest": "^26.1.0",
+    "grpc-host-builder": "^5.3.3",
+    "grpc-instrumentum": "^3.0.7",
+    "grpc-pbf-loader": "^1.0.4",
+    "jest": "^26.6.3",
     "jest-extended": "^0.11.5",
     "make-dir-cli": "^2.0.0",
-    "opentracing": "^0.14.4",
+    "opentracing": "^0.14.5",
     "processing-context": "^1.0.0",
-    "protobufjs": "^6.10.1"
+    "protobufjs": "^6.10.2"
   },
   "jest": {
     "testEnvironment": "node",

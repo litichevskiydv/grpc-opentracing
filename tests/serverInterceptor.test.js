@@ -1,5 +1,5 @@
 const path = require("path");
-const grpc = require("grpc");
+const grpc = require("@grpc/grpc-js");
 const opentracing = require("opentracing");
 const { GrpcHostBuilder } = require("grpc-host-builder");
 const { loadSync } = require("grpc-pbf-loader").packageDefinition;
@@ -9,25 +9,25 @@ const { serverInterceptor } = require("../src/index");
 const {
   HelloRequest: ServerHelloRequest,
   HelloResponse: ServerHelloResponse,
-  ErrorRequest: ServerErrorRequest
+  ErrorRequest: ServerErrorRequest,
 } = require("./generated/server/greeter_pb").v1;
 const {
   Event,
   HelloRequest: ClientHelloRequest,
   ErrorRequest: ClientErrorRequest,
-  GreeterClient
+  GreeterClient,
 } = require("./generated/client/greeter_client_pb").v1;
 
 const LocalTracer = require("./localTracer/tracer");
 const LocalSpan = require("./localTracer/span");
 
-const grpcBind = "0.0.0.0:3000";
+const grpcBind = "0.0.0.0:3001";
 const packageObject = grpc.loadPackageDefinition(
   loadSync(path.join(__dirname, "./protos/greeter.proto"), {
-    includeDirs: [path.join(__dirname, "./include/")]
+    includeDirs: [path.join(__dirname, "./include/")],
   })
 );
-/** @type {import("grpc").Server} */
+/** @type {import("@grpc/grpc-js").Server} */
 let server = null;
 /** @type {GreeterClient} */
 let client = null;
@@ -37,14 +37,14 @@ grpc.setLogVerbosity(grpc.logVerbosity.ERROR + 1);
 opentracing.initGlobalTracer(tracer);
 
 /**
- * @returns {import("grpc").Server}
+ * @returns {import("@grpc/grpc-js").Server}
  */
 const createServer = () =>
   new GrpcHostBuilder()
     .useLoggersFactory(() => ({ error: jest.fn() }))
     .addInterceptor(serverInterceptor)
     .addService(packageObject.v1.Greeter.service, {
-      sayHello: async call => {
+      sayHello: async (call) => {
         const request = new ServerHelloRequest(call.request);
 
         const event = request.event;
@@ -56,16 +56,16 @@ const createServer = () =>
       },
       performTransaction: () => {
         return {};
-      }
+      },
     })
     .bind(grpcBind)
-    .build();
+    .buildAsync();
 
 /**
  * @param {string} [name]
  * @returns {Promise<import("./generated/client/greeter_client_pb").v1.HelloResponse>}
  */
-const sayHello = name => {
+const sayHello = (name) => {
   const event = new Event();
   event.setName(name || "Lucky Every");
 
@@ -76,30 +76,35 @@ const sayHello = name => {
 };
 
 /**
- * @param {import("grpc").CallOptions} [callOptions]
+ * @param {import("@grpc/grpc-js").CallOptions} [callOptions]
  * @returns {Promise<void>}
  */
-const throwError = async callOptions => {
+const throwError = async (callOptions) => {
   const request = new ClientErrorRequest();
   request.setSubject("Learning");
 
   await client.throwError(request, null, callOptions);
 };
 
+const prepareErrorMatchingObject = (innerErrorMessage) =>
+  expect.objectContaining({
+    message: "13 INTERNAL: Unhandled exception has occurred",
+    details: [expect.objectContaining({ detail: innerErrorMessage })],
+  });
+
 beforeEach(() => {
   client = new GreeterClient(grpcBind, grpc.credentials.createInsecure());
 });
 
 afterEach(() => {
-  if (client) client.close();
-  if (server) server.forceShutdown();
-
+  client.close();
+  server.forceShutdown();
   tracer.clear();
 });
 
 test("Must trace single successful call on the server side", async () => {
   // Given
-  server = createServer();
+  server = await createServer();
 
   // When
   await sayHello();
@@ -117,10 +122,12 @@ test("Must trace single successful call on the server side", async () => {
 
 test("Must trace single errored call on the server side", async () => {
   // Given
-  server = createServer();
+  const errorMessage = "Something went wrong";
+
+  server = await createServer();
 
   // When, Then
-  await expect(throwError()).rejects.toEqual(new Error("13 INTERNAL: Something went wrong"));
+  await expect(throwError()).rejects.toEqual(prepareErrorMatchingObject(errorMessage));
 
   expect(tracer.spans.size).toBe(1);
 
@@ -129,14 +136,14 @@ test("Must trace single errored call on the server side", async () => {
     .log({ "gRPC request": { subject: "Learning" } })
     .setTag(opentracing.Tags.ERROR, true)
     .setTag(opentracing.Tags.SAMPLING_PRIORITY, 1)
-    .log(expect.objectContaining({ event: "error", message: "Something went wrong" }))
+    .log(expect.objectContaining({ event: "error", message: errorMessage }))
     .finish();
   expect(tracer.spans.get(expectedSpanId)).toEqual(expectedSpan);
 });
 
 test("Must trace two consecutive calls correctly", async () => {
   // Given
-  server = createServer();
+  server = await createServer();
 
   // When
   await sayHello("Tom");

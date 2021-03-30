@@ -3,12 +3,12 @@ const { serializeError } = require("serialize-error");
 const { defaultContext } = require("processing-context");
 
 /**
- * @param {import("grpc").ServerUnaryCall | import("grpc").ServerWritableStream | import("grpc").ServerReadableStream | import("grpc").ServerDuplexStream} call
- * @param {import("grpc").MethodDefinition} methodDefinition
+ * @param {import("@grpc/grpc-js").ServerUnaryCall | import("@grpc/grpc-js").ServerWritableStream | import("@grpc/grpc-js").ServerReadableStream | import("@grpc/grpc-js").ServerDuplexStream} call
+ * @param {import("@grpc/grpc-js").MethodDefinition} methodDefinition
  * @param {Function} next
  * @returns {Promise<any>}
  */
-module.exports = async function(call, methodDefinition, next) {
+module.exports = async function (call, methodDefinition, next) {
   const tracer = opentracing.globalTracer();
 
   const parentSpanContext = tracer.extract(opentracing.FORMAT_HTTP_HEADERS, call.metadata.getMap());

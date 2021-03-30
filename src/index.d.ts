@@ -4,8 +4,8 @@ import {
   ServerUnaryCall,
   ServerWritableStream,
   ServerReadableStream,
-  ServerDuplexStream
-} from "grpc";
+  ServerDuplexStream,
+} from "@grpc/grpc-js";
 
 interface ClientInterceptorOptions {
   method_definition: MethodDefinition<any, any>;
