@@ -246,6 +246,7 @@ test("Must trace the call that did not fit into the deadline", async () => {
 test("Must trace cancelled call", async () => {
   // Given
   server = await createServer();
+  client = createClient();
 
   // When
   await startAndCancelTransaction();
