@@ -62,6 +62,11 @@ const createServer = () =>
     .buildAsync();
 
 /**
+ * @returns {GreeterClient}
+ */
+const createClient = () => new GreeterClient(grpcBind, grpc.credentials.createInsecure());
+
+/**
  * @param {string} [name]
  * @returns {Promise<import("./generated/client/greeter_client_pb").v1.HelloResponse>}
  */
@@ -92,10 +97,6 @@ const prepareErrorMatchingObject = (innerErrorMessage) =>
     details: [expect.objectContaining({ detail: innerErrorMessage })],
   });
 
-beforeEach(() => {
-  client = new GreeterClient(grpcBind, grpc.credentials.createInsecure());
-});
-
 afterEach(() => {
   client.close();
   server.forceShutdown();
@@ -105,6 +106,7 @@ afterEach(() => {
 test("Must trace single successful call on the server side", async () => {
   // Given
   server = await createServer();
+  client = createClient();
 
   // When
   await sayHello();
@@ -125,6 +127,7 @@ test("Must trace single errored call on the server side", async () => {
   const errorMessage = "Something went wrong";
 
   server = await createServer();
+  client = createClient();
 
   // When, Then
   await expect(throwError()).rejects.toEqual(prepareErrorMatchingObject(errorMessage));
@@ -144,6 +147,7 @@ test("Must trace single errored call on the server side", async () => {
 test("Must trace two consecutive calls correctly", async () => {
   // Given
   server = await createServer();
+  client = createClient();
 
   // When
   await sayHello("Tom");

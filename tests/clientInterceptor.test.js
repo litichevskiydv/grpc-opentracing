@@ -72,6 +72,12 @@ const createServer = (configurator) => {
 };
 
 /**
+ * @returns {GreeterClient}
+ */
+const createClient = () =>
+  new GreeterClient(grpcBind, grpc.credentials.createInsecure(), { interceptors: [clientInterceptor] });
+
+/**
  * @param {string} [name]
  * @returns {Promise<import("./generated/client/greeter_client_pb").v1.HelloResponse>}
  */
@@ -117,10 +123,6 @@ const startAndCancelTransaction = async () => {
   rawLevelClient.close();
 };
 
-beforeEach(() => {
-  client = new GreeterClient(grpcBind, grpc.credentials.createInsecure(), { interceptors: [clientInterceptor] });
-});
-
 afterEach(() => {
   client.close();
   server.forceShutdown();
@@ -130,6 +132,7 @@ afterEach(() => {
 test("Must trace single successful call on the client side", async () => {
   // Given
   server = await createServer();
+  client = createClient();
 
   // When
   await sayHello();
@@ -145,6 +148,7 @@ test("Must trace single successful call on the client side", async () => {
 test("Must trace single errored call on the client side", async () => {
   // Given
   server = await createServer();
+  client = createClient();
 
   // When
   await throwError();
@@ -164,6 +168,7 @@ test("Must trace single errored call on the client side", async () => {
 test("Must link client and server spans together in the single call", async () => {
   // Given
   server = await createServer((x) => x.addInterceptor(serverInterceptor));
+  client = createClient();
 
   // When
   await sayHello();
@@ -186,6 +191,7 @@ test("Must link client and server spans together in the single call", async () =
 test("Must trace two consecutive calls correctly", async () => {
   // Given
   server = await createServer((x) => x.addInterceptor(serverInterceptor));
+  client = createClient();
 
   // When
   await sayHello("Tom");
@@ -220,6 +226,7 @@ test("Must trace two consecutive calls correctly", async () => {
 test("Must trace the call that did not fit into the deadline", async () => {
   // Given
   server = await createServer();
+  client = createClient();
 
   // When
   await throwError({ deadline: 10 });
