@@ -9,6 +9,9 @@
 
 Interceptors for client and server to track calls through opentracing
 
+## This was migrated to https://github.com/litichevskiydv/grpc-bay
+This repository has been moved to the unified "monorepo". You can find the source under [/packages/grpc-opentracing](https://github.com/litichevskiydv/grpc-bay/tree/master/packages/grpc-opentracing).
+
 # Install
 
 `npm i grpc-opentracing`
